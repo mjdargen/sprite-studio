@@ -1,0 +1,116 @@
+/*
+  Step 1: adding files (the button, the drop zone, dropping anywhere on the
+  page) and the list of files that have been added.
+*/
+
+import { state, requestRender, DEFAULT_SETTINGS } from "../state.js";
+import { $, h, rebuild } from "../util/dom.js";
+import { loadFiles } from "../formats/index.js";
+import { createSource } from "../core/sources.js";
+
+/** Set up the file button and dragging and dropping. Call once. */
+export function setUpFileInputs() {
+  const input = $("file-input");
+  $("choose-files").addEventListener("click", () => input.click());
+  input.addEventListener("change", () => {
+    addFiles(input.files);
+    input.value = ""; // so choosing the same file again still counts
+  });
+
+  // Files can be dropped anywhere on the page. While something is being
+  // dragged over the page, the drop zone lights up.
+  let dragDepth = 0;
+  document.addEventListener("dragenter", (event) => {
+    if (!hasFiles(event)) return;
+    dragDepth++;
+    document.body.classList.add("dragging");
+  });
+  document.addEventListener("dragleave", () => {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (!dragDepth) document.body.classList.remove("dragging");
+  });
+  document.addEventListener("dragover", (event) => {
+    if (hasFiles(event)) event.preventDefault(); // allows dropping
+  });
+  document.addEventListener("drop", (event) => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    dragDepth = 0;
+    document.body.classList.remove("dragging");
+    addFiles(event.dataTransfer.files);
+  });
+}
+
+function hasFiles(event) {
+  return event.dataTransfer && Array.from(event.dataTransfer.types).includes("Files");
+}
+
+/** Load files and add them as sources. */
+export async function addFiles(fileList) {
+  if (!fileList || !fileList.length) return;
+  const drop = $("drop-zone");
+  drop.setAttribute("aria-busy", "true");
+  const { specs, errors } = await loadFiles(fileList, {
+    mode: state.mode,
+    groupNumbered: state.settings.groupNumbered,
+  });
+  drop.removeAttribute("aria-busy");
+
+  state.messages.loadErrors = errors;
+  if (specs.length && state.isExample) {
+    // The example's settings were for the example, so start the student's
+    // files from the defaults (keeping the one setting that affected loading)
+    const groupNumbered = state.settings.groupNumbered;
+    clearSources();
+    state.settings = structuredClone(DEFAULT_SETTINGS);
+    state.settings.groupNumbered = groupNumbered;
+  }
+  for (const spec of specs) {
+    const source = createSource(spec, state.mode);
+    state.sources.push(source);
+    state.selectedSourceId = source.id;
+    state.selectedAnimId = null; // the first animation of the new file gets picked
+  }
+  requestRender({ now: true });
+}
+
+/** Remove every source (and the example). */
+export function clearSources() {
+  state.sources = [];
+  state.order = [];
+  state.selectedSourceId = null;
+  state.selectedAnimId = null;
+  state.isExample = false;
+}
+
+/** Draw the list of added files. */
+export function drawFileList() {
+  const items = state.sources.map((source, index) => {
+    const select = () => {
+      state.selectedSourceId = source.id;
+      state.selectedAnimId = null;
+      requestRender({ now: true });
+    };
+    const remove = () => {
+      state.sources.splice(index, 1);
+      if (state.selectedSourceId === source.id) {
+        state.selectedSourceId = state.sources.length ? state.sources[Math.max(0, index - 1)].id : null;
+        state.selectedAnimId = null;
+      }
+      if (!state.sources.length) state.isExample = false;
+      requestRender({ now: true });
+    };
+    return h("div", { class: "item" + (source.id === state.selectedSourceId ? " selected" : "") },
+      h("div", {},
+        h("div", {
+          class: "name pickable", role: "button", tabindex: "0", title: "Show this file",
+          onclick: select,
+          onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); } },
+        }, source.name),
+        h("div", { class: "meta" }, source.note)),
+      h("div", { class: "buttons" },
+        h("button", { type: "button", class: "small", "aria-label": `Remove ${source.name}`, onclick: remove }, "Remove")));
+  });
+  rebuild($("file-list"), items);
+  $("example-note").hidden = !state.isExample;
+}

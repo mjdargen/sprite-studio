@@ -1,0 +1,278 @@
+<!doctype html>
+<!--
+  Sprite Studio: the page layout.
+
+  This file is only the markup. The look is in css/, and everything the page
+  does is in js/ (start with js/main.js). See MAINTAINING.md for a map.
+
+  How the pieces connect:
+  - An element with data-setting="some.path" is a control for that value in
+    the `state` object (js/state.js). js/ui/controls.js keeps them in sync, so
+    a new setting only needs a new control here plus code that reads it.
+  - An element with data-show="some.path" shows that value as text.
+  - class="sprites-only" / "tiles-only" hides an element in the other mode.
+  - Elements with an id are filled in or wired up by the js/ui/ files.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite Studio</title>
+<meta name="description" content="Turn sprite sheets, GIFs, Aseprite and Piskel files, and tile sets into sprite sheets and tile sheets for Pygame Zero Plus. Runs in your browser; nothing is uploaded.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Jersey+10&display=swap">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/layout.css">
+<script type="module" src="js/main.js"></script>
+</head>
+<body data-mode="sprites">
+
+<!-- ===================== Top bar: title and mode switch ===================== -->
+<header class="topbar">
+  <div class="brand">
+    <h1>Sprite Studio</h1>
+    <p>Make sprite sheets and tile sheets for Pygame Zero Plus. Everything stays on your computer.</p>
+  </div>
+  <div class="mode-switch" role="radiogroup" aria-label="What are you making?">
+    <label class="mode">
+      <input type="radio" name="mode" value="sprites" data-setting="mode" checked>
+      <span><strong>Sprite sheet</strong><small>animations for an Actor</small></span>
+    </label>
+    <label class="mode">
+      <input type="radio" name="mode" value="tiles" data-setting="mode">
+      <span><strong>Tile sheet</strong><small>tiles for a Tiled map</small></span>
+    </label>
+  </div>
+</header>
+
+<noscript><p class="noscript">Sprite Studio needs JavaScript turned on.</p></noscript>
+<p class="noscript" id="file-warning" hidden>
+  Sprite Studio can't run when index.html is opened straight from a folder, because browsers
+  only load its code from a web server. Use <a href="https://mjdargen.github.io/sprite-studio/">the website</a>,
+  or run <code>python serve.py</code> in this folder and go to <a href="http://localhost:8000">http://localhost:8000</a>.
+</p>
+<script>
+  // A plain (non-module) script, so it still runs from a file:// page, where
+  // the app's modules are blocked and the page would otherwise sit empty
+  if (location.protocol === "file:") document.getElementById("file-warning").hidden = false;
+</script>
+
+<main class="app">
+  <!-- ===================== Left column: the four steps ===================== -->
+  <div class="settings">
+
+    <!-- Step 1: add files (js/ui/files-panel.js) -->
+    <section class="card" aria-labelledby="add-title">
+      <h2 id="add-title"><span class="step">1</span> Add your art</h2>
+      <div class="drop" id="drop-zone">
+        <p>Drop files here, or</p>
+        <button class="primary" id="choose-files" type="button">Choose files</button>
+        <input id="file-input" type="file" multiple hidden
+               accept=".png,.gif,.jpg,.jpeg,.webp,.bmp,.aseprite,.ase,.piskel,.json,image/*">
+        <p class="hint">Sprite sheets, strips and single images (PNG, JPG, WebP, BMP), animated GIFs,
+          Aseprite and Piskel files, and sheets exported with a .json file (add the image too).</p>
+      </div>
+      <label class="choice sprites-only">
+        <input type="checkbox" data-setting="settings.groupNumbered">
+        Join numbered images (walk1.png, walk2.png…) into one animation
+      </label>
+      <div class="list" id="file-list"></div>
+      <div id="file-messages"></div>
+      <p class="hint" id="example-note" hidden><span class="badge">Example</span>
+        <span class="sprites-only">Try fixing this slime: its pink background needs to go (step 3).</span>
+        <span class="tiles-only">This tile set has a 1-pixel gap between its tiles, which the new sheet leaves out.</span>
+        <a id="example-download" href="examples/slime.png" download="slime.png">Download it</a> to practice,
+        or add your own files to replace it.</p>
+    </section>
+
+    <!-- Step 2: slicing (js/ui/grid-panel.js) and animations (js/ui/anim-panel.js) -->
+    <section class="card" aria-labelledby="cut-title">
+      <h2 id="cut-title"><span class="step">2</span>
+        <span class="sprites-only">Cut it into frames</span><span class="tiles-only">Cut it into tiles</span></h2>
+      <div id="grid-panel"></div>
+      <div id="anim-panel" class="sprites-only"></div>
+    </section>
+
+    <!-- Step 3: clean-up settings (read by js/core/sprite-sheet.js and tile-sheet.js) -->
+    <section class="card" aria-labelledby="clean-title">
+      <h2 id="clean-title"><span class="step">3</span> Clean it up</h2>
+
+      <div class="field">
+        <label for="bg-mode">Background</label>
+        <select id="bg-mode" data-setting="settings.background.mode">
+          <option value="off">Keep it as it is</option>
+          <option value="auto">Make the top-left corner's color see-through</option>
+          <option value="pick">Make a color I choose see-through</option>
+        </select>
+      </div>
+      <div class="row" id="bg-pick-row">
+        <div class="field narrow">
+          <label for="bg-color">Color</label>
+          <input type="color" id="bg-color" data-setting="settings.background.color">
+        </div>
+        <button type="button" id="pick-color" class="small">Pick from your file</button>
+      </div>
+      <div class="field">
+        <label for="bg-tolerance">Also remove colors this close to it:
+          <output data-show="settings.background.tolerance"></output></label>
+        <input type="range" id="bg-tolerance" min="0" max="100" data-setting="settings.background.tolerance">
+      </div>
+
+      <fieldset class="group">
+        <legend><span class="sprites-only">Cut pixels off the edge of every frame</span>
+          <span class="tiles-only">Cut pixels off the edge of every tile</span></legend>
+        <div class="row four">
+          <div class="field"><label for="crop-left">Left</label><input type="number" id="crop-left" min="0" data-setting="settings.crop.left"></div>
+          <div class="field"><label for="crop-right">Right</label><input type="number" id="crop-right" min="0" data-setting="settings.crop.right"></div>
+          <div class="field"><label for="crop-top">Top</label><input type="number" id="crop-top" min="0" data-setting="settings.crop.top"></div>
+          <div class="field"><label for="crop-bottom">Bottom</label><input type="number" id="crop-bottom" min="0" data-setting="settings.crop.bottom"></div>
+        </div>
+      </fieldset>
+
+      <div class="sprites-only">
+        <div class="field">
+          <label for="trim">Trim empty space around the art</label>
+          <select id="trim" data-setting="settings.trim">
+            <option value="file">Yes, the same amount for everything from one file</option>
+            <option value="each">Yes, each animation on its own</option>
+            <option value="off">No</option>
+          </select>
+          <p class="hint">Trimming everything from one file the same amount keeps your character in the same spot when it changes animation.</p>
+        </div>
+        <div class="row">
+          <div class="field"><label for="padding">Space to leave around it</label><input type="number" id="padding" min="0" data-setting="settings.padding"></div>
+          <div class="field">
+            <label for="align">Line frames up by</label>
+            <select id="align" data-setting="settings.align">
+              <option value="bottom">Bottom (feet on the ground)</option>
+              <option value="center">Center</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="scale">Size</label>
+          <select id="scale" data-setting="settings.scale" data-type="number">
+            <option value="0.25">¼× (shrink art that was enlarged 4×)</option>
+            <option value="0.3333333333333333">⅓×</option>
+            <option value="0.5">½×</option>
+            <option value="1">1× (as it is)</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+            <option value="4">4×</option>
+          </select>
+        </div>
+        <label class="choice end"><input type="checkbox" data-setting="settings.smooth"> Smooth (not pixel art)</label>
+      </div>
+
+      <div class="tiles-only">
+        <label class="choice"><input type="checkbox" data-setting="settings.tiles.skipEmpty"> Leave out empty tiles</label>
+        <p class="hint">Only do this for a new tile sheet: it changes the tile numbers, so maps already made with it would show the wrong tiles.</p>
+        <div class="field">
+          <label for="tile-columns">Tiles across (0 means automatic)</label>
+          <input type="number" id="tile-columns" min="0" data-setting="settings.tiles.columns">
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4: name and save (js/ui/save-panel.js) -->
+    <section class="card" aria-labelledby="save-title">
+      <h2 id="save-title"><span class="step">4</span> Save it</h2>
+      <div class="field">
+        <label for="sheet-name">Name</label>
+        <input type="text" id="sheet-name" data-setting="settings.name" spellcheck="false" autocomplete="off">
+      </div>
+      <p class="hint" id="name-hint"></p>
+      <div class="toolbar">
+        <button class="primary" id="download-png" type="button">Download PNG</button>
+        <button id="download-md" class="sprites-only" type="button">Download notes (.md)</button>
+        <button id="download-tsx" class="tiles-only" type="button">Download tileset (.tsx)</button>
+      </div>
+      <p class="hint sprites-only">Put the PNG in your game's <code>sprites</code> folder.</p>
+      <p class="hint tiles-only">Put the PNG and the .tsx file in your game's <code>maps</code> folder.</p>
+    </section>
+  </div>
+
+  <!-- ===================== Right column: the previews ===================== -->
+  <div class="previews">
+
+    <!-- Your file, with the grid on top (js/ui/source-view.js) -->
+    <section class="card preview-card" aria-labelledby="source-title">
+      <h2 id="source-title">Your file</h2>
+      <div class="stage" id="source-stage"><canvas class="pixels" id="source-canvas" width="1" height="1"></canvas></div>
+      <div class="stats" id="source-stats"></div>
+      <p class="hint" id="source-hint"></p>
+    </section>
+
+    <!-- Animation player (js/ui/player.js) -->
+    <section class="card preview-card sprites-only" aria-labelledby="play-title">
+      <h2 id="play-title">Animation</h2>
+      <div class="chips" id="anim-chips"></div>
+      <div class="stage" id="play-stage"><canvas class="pixels" id="play-canvas" width="1" height="1"></canvas></div>
+      <div class="toolbar">
+        <button id="play-toggle" type="button">Pause</button>
+        <button id="play-back" type="button" class="small" aria-label="Previous frame">◀</button>
+        <button id="play-next" type="button" class="small" aria-label="Next frame">▶</button>
+        <span class="stats" id="play-stats"></span>
+      </div>
+      <div class="toolbar">
+        <label class="inline">Zoom
+          <select data-setting="view.playerZoom">
+            <option value="fit">Fit</option>
+            <option value="1">1× (real size)</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+            <option value="4">4×</option>
+          </select>
+        </label>
+        <label class="inline">Behind it
+          <select data-setting="view.playerBackground">
+            <option value="checker">Checks</option>
+            <option value="#000000">Black</option>
+            <option value="#ffffff">White</option>
+            <option value="#7ec8e3">Sky</option>
+          </select>
+        </label>
+        <label class="choice"><input type="checkbox" data-setting="view.showCenter"> Show the Actor's edges and center</label>
+      </div>
+    </section>
+
+    <!-- Tile check: one tile repeated, to spot seams (js/ui/tile-check.js) -->
+    <section class="card preview-card tiles-only" aria-labelledby="tile-check-title">
+      <h2 id="tile-check-title">Tile check</h2>
+      <div class="stage" id="tile-stage"><canvas class="pixels" id="tile-canvas" width="1" height="1"></canvas></div>
+      <div class="stats" id="tile-stats"></div>
+      <p class="hint">Click a tile in your new tile sheet to see it repeated, so you can spot seams.</p>
+    </section>
+
+    <!-- The finished sheet (js/ui/sheet-view.js, order-list.js, save-panel.js) -->
+    <section class="card preview-card" aria-labelledby="sheet-title">
+      <h2 id="sheet-title"><span class="sprites-only">Your new sprite sheet</span><span class="tiles-only">Your new tile sheet</span></h2>
+      <div class="toolbar">
+        <label class="choice"><input type="checkbox" data-setting="view.showLines">
+          <span class="sprites-only">Show frame lines</span><span class="tiles-only">Show tile lines</span></label>
+        <label class="choice tiles-only"><input type="checkbox" data-setting="view.tileNumbers"> Show tile numbers</label>
+      </div>
+      <div class="stage" id="sheet-stage"><canvas class="pixels" id="sheet-canvas" width="1" height="1"></canvas></div>
+      <div class="stats" id="sheet-stats"></div>
+      <div id="result-messages"></div>
+      <div class="field sprites-only">
+        <span class="label">Rows in your sheet</span>
+        <div class="list" id="order-list"></div>
+      </div>
+      <div class="field">
+        <div class="toolbar spread">
+          <span class="label" id="code-title">Code for your game</span>
+          <button class="small" id="copy-code" type="button">Copy</button>
+        </div>
+        <pre class="code" id="code"></pre>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,243 @@
+/*
+  Sprite Studio: page layout and controls.
+
+  The page is a workbench: the four steps run down the left in their own
+  scrolling column, and the previews fill the right in theirs, so no setting
+  can end up off the bottom of the screen. Below 900px wide the two columns
+  stack and the whole page scrolls instead.
+
+  Sections, in order: page frame, mode switch, cards, form controls, buttons,
+  lists, previews, messages, and mode-only elements.
+*/
+
+/* ---------- Page frame ---------- */
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 var(--font-body);
+  display: flex;
+  flex-direction: column;
+}
+code { font-family: var(--font-mono); font-size: 0.9em; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.brand h1 { font: 400 2.1rem/1 var(--font-display); margin: 0 0 4px; letter-spacing: 0.03em; }
+.brand p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+.noscript { padding: 16px; color: var(--danger); }
+
+/* Two columns that each scroll on their own */
+.app {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(320px, 410px) 1fr;
+}
+.settings, .previews {
+  overflow-y: auto; min-height: 0;
+  padding: 12px 16px 32px;
+}
+.settings {
+  border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* Previews: "Your file" across the top (sheets are usually wide), then the
+   player (or tile check) beside the finished sheet */
+.previews {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 2fr);
+  gap: 14px;
+  align-content: start;
+}
+.previews > .preview-card:first-child { grid-column: 1 / -1; }
+
+/* Medium screens: one preview per row */
+@media (max-width: 1150px) {
+  .previews { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Narrow screens: stack everything and let the page scroll */
+@media (max-width: 900px) {
+  html, body { height: auto; }
+  body { display: block; }
+  .app { display: block; }
+  .settings, .previews { overflow: visible; border: 0; }
+  .previews { grid-template-columns: 1fr; padding-top: 0; }
+}
+
+/* ---------- Mode switch (Sprite sheet / Tile sheet) ---------- */
+
+.mode-switch {
+  display: flex; gap: 4px; padding: 4px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
+}
+.mode { cursor: pointer; }
+.mode input { position: absolute; opacity: 0; pointer-events: none; }
+.mode span {
+  display: flex; flex-direction: column; padding: 6px 14px; border-radius: 7px; line-height: 1.2;
+}
+.mode small { color: var(--muted); font-size: 0.8rem; }
+.mode input:checked + span { background: var(--accent); color: var(--accent-ink); }
+.mode input:checked + span small { color: inherit; opacity: 0.85; }
+.mode input:focus-visible + span { outline: 2px solid var(--mark); outline-offset: 2px; }
+
+/* ---------- Cards ---------- */
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  min-width: 0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.card h2 {
+  font: 700 0.8rem/1.2 var(--font-body);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.card h2 .step {
+  font: 400 1.1rem/1 var(--font-display);
+  color: var(--accent-ink); background: var(--accent);
+  border-radius: 4px; padding: 3px 6px; letter-spacing: 0;
+}
+.hint { color: var(--muted); font-size: 0.86rem; margin: 0; }
+.badge { font: 700 0.72rem var(--font-body); text-transform: uppercase; letter-spacing: 0.06em; color: var(--mark); }
+
+/* ---------- Form controls ---------- */
+
+label, .label { font-size: 0.9rem; }
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field.narrow { flex: 0 0 auto; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.row > .field { flex: 1 1 90px; }
+.row.four > .field { flex: 1 1 60px; }
+.choice { display: flex; gap: 6px; align-items: center; font-size: 0.92rem; }
+.choice.end { padding-bottom: 6px; }
+.inline { display: inline-flex; gap: 6px; align-items: center; font-size: 0.88rem; }
+fieldset.group { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.group legend { padding: 0; margin-bottom: 4px; font-size: 0.9rem; }
+
+input[type="number"], input[type="text"], select {
+  font: 0.95rem var(--font-body);
+  color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 8px; width: 100%; min-width: 0;
+}
+.inline select { width: auto; padding: 3px 6px; }
+input[type="number"], input.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+input[type="color"] { width: 52px; height: 34px; padding: 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+input[aria-invalid="true"] { border-color: var(--danger); }
+:focus-visible { outline: 2px solid var(--mark); outline-offset: 2px; }
+
+/* ---------- Buttons ---------- */
+
+button {
+  font: 700 0.92rem var(--font-body);
+  color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 7px 12px; cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.small { padding: 3px 8px; font-size: 0.82rem; }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.toolbar.spread { justify-content: space-between; }
+
+/* ---------- Drop zone and lists ---------- */
+
+.drop {
+  border: 2px dashed var(--line); border-radius: var(--radius);
+  padding: 14px; text-align: center; color: var(--muted);
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+}
+.drop p { margin: 0; }
+.drop.over, body.dragging .drop { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+
+.list { display: flex; flex-direction: column; gap: 6px; }
+.list:empty { display: none; }
+.item {
+  display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center;
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px;
+  background: var(--bg);
+}
+.item.selected { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.item .name { font-weight: 700; overflow-wrap: anywhere; }
+.item .name.pickable { cursor: pointer; }
+.item .meta { color: var(--muted); font-size: 0.82rem; font-family: var(--font-mono); overflow-wrap: anywhere; }
+.item .buttons { display: flex; gap: 4px; }
+.item .full { grid-column: 1 / -1; }
+
+/* An animation in step 2 is a small form of its own */
+.anim { grid-template-columns: 1fr; cursor: pointer; }
+.anim .row { gap: 6px; }
+.anim .row > .field.frames { flex: 3 1 120px; }
+.anim .row > .field.fps { flex: 0 1 70px; }
+
+/* ---------- Previews ---------- */
+
+.stage {
+  overflow: auto;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg);
+  min-height: 160px; max-height: 48vh;
+  display: grid; place-items: center;
+  padding: 10px;
+}
+.stage.picking canvas { cursor: crosshair; }
+.stage.clickable canvas { cursor: pointer; }
+
+/* Canvases that show art: sharp pixels on a checkerboard. The checker size is
+   set per canvas in js/util/view.js so it lines up with the zoom. */
+canvas.pixels {
+  image-rendering: pixelated;
+  background-color: var(--check-a);
+  background-image:
+    linear-gradient(45deg, var(--check-b) 25%, transparent 25%, transparent 75%, var(--check-b) 75%),
+    linear-gradient(45deg, var(--check-b) 25%, transparent 25%, transparent 75%, var(--check-b) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+  max-width: none;
+  display: block;
+}
+canvas.pixels.solid { background-image: none; }
+
+.stats { font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips:empty { display: none; }
+.chip { font-weight: 400; padding: 4px 10px; border-radius: 999px; }
+
+pre.code {
+  margin: 0; padding: 10px 12px; overflow-x: auto;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  font: 0.85rem/1.5 var(--font-mono); white-space: pre;
+}
+
+/* ---------- Messages ---------- */
+
+.message { margin: 0; font-size: 0.9rem; padding: 6px 10px; border-radius: 6px; border-left: 3px solid; white-space: pre-line; }
+.message.error { color: var(--danger); border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
+.message.warning { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 8%, transparent); }
+#file-messages, #result-messages { display: flex; flex-direction: column; gap: 6px; }
+#file-messages:empty, #result-messages:empty { display: none; }
+.field-error { color: var(--danger); font-size: 0.82rem; margin: 0; }
+
+/* ---------- Mode-only elements ---------- */
+
+body[data-mode="tiles"] .sprites-only,
+body[data-mode="sprites"] .tiles-only { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }

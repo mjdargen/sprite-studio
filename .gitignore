@@ -1,0 +1,9 @@
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Scratch files from testing
+tests/_tmp/
+__pycache__/

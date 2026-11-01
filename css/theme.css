@@ -1,0 +1,58 @@
+/*
+  Sprite Studio: colors and fonts.
+
+  Every color the page uses is a variable here, so changing the look means
+  changing this file only. The dark theme follows the computer's setting; add
+  data-theme="light" or "dark" to <html> to force one.
+
+  The canvases also read --accent, --mark and --muted (see js/util/view.js),
+  so the grid lines drawn over the art match the theme.
+*/
+
+:root {
+  /* Page */
+  --bg: #eef0f4;          /* behind everything */
+  --panel: #ffffff;       /* cards */
+  --ink: #1b2130;         /* main text */
+  --muted: #586174;       /* hints and secondary text */
+  --line: #d6dbe5;        /* borders */
+
+  /* Highlights */
+  --accent: #1f6f8b;      /* buttons, selected things, grid lines over the art */
+  --accent-ink: #ffffff;  /* text on --accent */
+  --accent-soft: #dcecf2; /* a light wash of the accent */
+  --mark: #c97f00;        /* second highlight: crop lines, focus rings, badges */
+  --danger: #b4372b;      /* errors */
+  --warn: #8a5a00;        /* warnings */
+
+  /* The checkerboard behind see-through pixels */
+  --check-a: #ffffff;
+  --check-b: #e3e6ec;
+
+  /* Fonts (loaded from Google Fonts in index.html, with fallbacks) */
+  --font-display: "Jersey 10", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+  --radius: 8px;
+  color-scheme: light;
+}
+
+/* Dark theme: the same variables with dark values. It's written twice, once
+   for "follow the computer" and once for data-theme="dark". */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151922; --panel: #1e2430; --ink: #e8ebf1; --muted: #9aa4b6; --line: #333c4c;
+    --accent: #5cb3d1; --accent-ink: #0f1a20; --accent-soft: #23394a;
+    --mark: #f0b43a; --danger: #f07a6c; --warn: #f0b43a;
+    --check-a: #2a303c; --check-b: #232833;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151922; --panel: #1e2430; --ink: #e8ebf1; --muted: #9aa4b6; --line: #333c4c;
+  --accent: #5cb3d1; --accent-ink: #0f1a20; --accent-soft: #23394a;
+  --mark: #f0b43a; --danger: #f07a6c; --warn: #f0b43a;
+  --check-a: #2a303c; --check-b: #232833;
+  color-scheme: dark;
+}
