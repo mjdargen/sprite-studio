@@ -88,6 +88,6 @@ export function tilesHowTo(result, name) {
     `#    no margin and no spacing.)`,
     `# 3. Save the map in the maps folder too, then in your game:`,
     "",
-    `layers = load_tile_map_actors("your_map_name")`,
+    `level = load_tile_map("your_map_name")`,
   ].join("\n");
 }
