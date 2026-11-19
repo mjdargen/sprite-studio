@@ -58,10 +58,11 @@ js/formats/           reading files (each returns frames or an image)
 js/core/              the work, with no page code in it
   sources.js          a loaded file ("source") and what it holds
   grid.js             cutting a sheet into a grid, and guessing the grid
+  uneven.js           cutting a sheet whose gaps aren't even ("Gaps aren't even")
   prepare.js          background removal and cutting, with caching
   layouts.js          ready-made ways to make animations (each row, ...)
   frame-list.js       reading and writing "0-3, 5" frame lists
-  clean-up.js         edge cropping, trimming, padding, resizing
+  clean-up.js         edge cropping, trimming, padding, resizing, colors
   naming.js           the sheet's name and the animation names
   sprite-sheet.js     builds the sprite sheet
   tile-sheet.js       builds the tile sheet
@@ -69,7 +70,7 @@ js/core/              the work, with no page code in it
 
 js/ui/                the page: one file per panel
   controls.js         links data-setting controls to the state
-  files-panel.js      step 1: adding files, the file list
+  files-panel.js      step 1: adding files, the file list (and its order in tiles mode)
   grid-panel.js       step 2: frame size and gaps
   anim-panel.js       step 2: each file's animations
   source-view.js      "Your file" preview, clicking frames, picking colors
@@ -204,5 +205,13 @@ files as they are.
   of each frame can fool it (for example, it guesses 32 × 16 for a 32 × 32
   sheet whose art is all in the bottom half). Students can always type the
   right size.
+- In tile mode, several images of the same size up to 128 × 128 are treated
+  as separate tiles, and bigger ones as tile sets to stack
+  (`LARGEST_SINGLE_TILE` in `js/formats/index.js`). Two tiny tile sets of the
+  same size would be read as single tiles.
+- "Gaps aren't even" needs see-through gaps, and works best when each tile
+  is filled edge to edge. Art that doesn't fill its tiles (an item on a
+  see-through background) is centered in the nearest whole number of tiles,
+  which is a guess.
 - Very large tile sets (thousands of tiles) are slower, since every tile is
   handled separately.

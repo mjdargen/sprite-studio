@@ -169,6 +169,27 @@
         <label class="choice end"><input type="checkbox" data-setting="settings.smooth"> Smooth (not pixel art)</label>
       </div>
 
+      <fieldset class="group">
+        <legend>Colors (changes the whole sheet)</legend>
+        <label class="choice"><input type="checkbox" data-setting="settings.filters.invert"> Invert colors</label>
+        <label class="choice"><input type="checkbox" data-setting="settings.filters.gray"> Black and white</label>
+        <div class="row">
+          <div class="field narrow">
+            <label for="tint-color">Tint</label>
+            <input type="color" id="tint-color" data-setting="settings.filters.tint">
+          </div>
+          <div class="field">
+            <label for="tint-amount">How much tint:
+              <output data-show="settings.filters.tintAmount"></output>%</label>
+            <input type="range" id="tint-amount" min="0" max="100" data-setting="settings.filters.tintAmount">
+          </div>
+        </div>
+        <div class="field">
+          <label for="opacity">Opacity: <output data-show="settings.filters.opacity"></output>%</label>
+          <input type="range" id="opacity" min="0" max="100" data-setting="settings.filters.opacity">
+        </div>
+      </fieldset>
+
       <div class="tiles-only">
         <label class="choice"><input type="checkbox" data-setting="settings.tiles.skipEmpty"> Leave out empty tiles</label>
         <p class="hint">Only do this for a new tile sheet: it changes the tile numbers, so maps already made with it would show the wrong tiles.</p>

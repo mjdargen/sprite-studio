@@ -13,7 +13,7 @@
   So buildSpriteSheet():
     1. puts the animations in the student's order (state.order)
     2. gets each animation's frames (background already removed, prepare.js)
-    3. cleans them up: cut edges, trim, pad, resize (clean-up.js)
+    3. cleans them up: cut edges, trim, pad, resize, colors (clean-up.js)
     4. makes every cell as big as the biggest frame, and lines smaller frames
        up at the bottom or center
     5. draws everything onto one canvas
@@ -31,7 +31,7 @@
 
 import { newCanvas, context } from "../util/canvas.js";
 import { prepare, solidBackground } from "./prepare.js";
-import { cropEdges, sharedBox, trimToBox, pad, scale } from "./clean-up.js";
+import { cropEdges, sharedBox, trimToBox, pad, scale, filterColors } from "./clean-up.js";
 import { sheetName, animationNames } from "./naming.js";
 
 /** Browsers and graphics cards struggle with images bigger than this. */
@@ -93,6 +93,9 @@ export function buildSpriteSheet(state) {
   if (!settings.smooth && !Number.isInteger(settings.scale) && !Number.isInteger(1 / settings.scale)) {
     warnings.push("Pixel art can look uneven at this size. Whole sizes (2×, 3×) or halves and quarters work best.");
   }
+
+  // 3. Colors
+  for (const a of animations) a.frames = filterColors(a.frames, settings.filters);
 
   // 4. Every cell is the size of the biggest frame
   const allFrames = animations.flatMap((a) => a.frames);

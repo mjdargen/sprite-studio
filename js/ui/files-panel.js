@@ -1,12 +1,14 @@
 /*
   Step 1: adding files (the button, the drop zone, dropping anywhere on the
-  page) and the list of files that have been added.
+  page) and the list of files that have been added. In tiles mode the list
+  has buttons to move files, since files are stacked in the tile sheet in
+  this order.
 */
 
 import { state, requestRender, DEFAULT_SETTINGS } from "../state.js";
 import { $, h, rebuild } from "../util/dom.js";
 import { loadFiles } from "../formats/index.js";
-import { createSource } from "../core/sources.js";
+import { createSource, shareGrid } from "../core/sources.js";
 
 /** Set up the file button and dragging and dropping. Call once. */
 export function setUpFileInputs() {
@@ -71,6 +73,10 @@ export async function addFiles(fileList) {
     state.selectedSourceId = source.id;
     state.selectedAnimId = null; // the first animation of the new file gets picked
   }
+  // Tile sets that go in one tile sheet are cut the same way, so new ones
+  // use the grid of the first one (fixing it in step 2 fixes them all)
+  const firstSheet = state.sources.find((s) => s.kind === "sheet");
+  if (state.mode === "tiles" && firstSheet) shareGrid(state.sources, firstSheet.grid);
   requestRender({ now: true });
 }
 
@@ -100,6 +106,14 @@ export function drawFileList() {
       if (!state.sources.length) state.isExample = false;
       requestRender({ now: true });
     };
+    const move = (to) => {
+      [state.sources[index], state.sources[to]] = [state.sources[to], state.sources[index]];
+      requestRender({ now: true });
+    };
+    const arrows = state.mode === "tiles" && state.sources.length > 1 && [
+      h("button", { type: "button", class: "small", "aria-label": `Move ${source.name} up`, disabled: index === 0, onclick: () => move(index - 1) }, "↑"),
+      h("button", { type: "button", class: "small", "aria-label": `Move ${source.name} down`, disabled: index === state.sources.length - 1, onclick: () => move(index + 1) }, "↓"),
+    ];
     return h("div", { class: "item" + (source.id === state.selectedSourceId ? " selected" : "") },
       h("div", {},
         h("div", {
@@ -109,6 +123,7 @@ export function drawFileList() {
         }, source.name),
         h("div", { class: "meta" }, source.note)),
       h("div", { class: "buttons" },
+        arrows,
         h("button", { type: "button", class: "small", "aria-label": `Remove ${source.name}`, onclick: remove }, "Remove")));
   });
   rebuild($("file-list"), items);

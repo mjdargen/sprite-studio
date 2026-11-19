@@ -74,6 +74,7 @@ export function drawSheetView() {
   const { tileWidth: tw, tileHeight: th, columns, count } = result;
   const numbers = state.view.tileNumbers && tw * shownZoom >= 22 && th * shownZoom >= 16;
   for (let i = 0; i < count; i++) {
+    if (!result.tiles[i]) continue; // an empty space after a narrower file
     const x = (i % columns) * tw;
     const y = Math.floor(i / columns) * th;
     if (state.view.showLines) {
@@ -92,6 +93,6 @@ export function drawSheetView() {
 
   const smallNote = state.view.tileNumbers && !numbers ? " · zoom too small to number the tiles" : "";
   $("sheet-stats").textContent =
-    `${name}.png · ${result.sheet.width}×${result.sheet.height} · ${count} tiles of ${tw}×${th}, ` +
+    `${name}.png · ${result.sheet.width}×${result.sheet.height} · ${result.tiles.filter(Boolean).length} tiles of ${tw}×${th}, ` +
     `${columns} across · shown at ${zoomLabel(shownZoom)}${smallNote}`;
 }

@@ -10,9 +10,12 @@
       count,           how many frames (or grid cells) there are
       cols, rows,      the grid's size (a "frames" source is one row)
       size,            { width, height } of one frame
+      rect(i),         where frame i is in the sheet, { x, y, w, h }, or null
+                       for an empty space (sheets only)
       frame(i),        frame number i as a canvas, background removed
       isEmpty(i),      true if frame i has nothing visible in it
       picture,         the whole sheet with the background removed (sheets only)
+      found, overlaps  tiles found and tiles left out (uneven sheets only, see uneven.js)
       frames,          all the frames with the background removed (frames only)
     }
 
@@ -20,8 +23,9 @@
   or the grid changes, so redrawing the page stays fast.
 */
 
-import { cloneCanvas, readPixels, isRegionEmpty, isEmpty, copyRegion, context, hexToRgb } from "../util/canvas.js";
+import { cloneCanvas, readPixels, isRegionEmpty, isEmpty, copyRegion, context, hexToRgb, newCanvas } from "../util/canvas.js";
 import { gridSize, cellRect } from "./grid.js";
+import { unevenGrid } from "./uneven.js";
 
 /**
  * Get a source's frames ready to use (see the top of this file).
@@ -46,7 +50,9 @@ export function prepare(source, background) {
   const gridKey = source.kind === "sheet" ? JSON.stringify(source.grid) : "frames";
   if (cache.prepared && cache.gridKey === gridKey) return cache.prepared;
   cache.gridKey = gridKey;
-  cache.prepared = source.kind === "sheet" ? prepareSheet(source, cache.picture) : prepareFrames(cache.frames);
+  if (source.kind === "frames") cache.prepared = prepareFrames(cache.frames);
+  else if (source.grid.uneven) cache.prepared = prepareUneven(source, cache.picture);
+  else cache.prepared = prepareSheet(source, cache.picture);
   return cache.prepared;
 }
 
@@ -62,6 +68,7 @@ function prepareSheet(source, picture) {
     rows,
     size: { width: source.grid.width, height: source.grid.height },
     picture,
+    rect,
     frame(i) {
       if (!frames.has(i)) {
         const r = rect(i);
@@ -77,6 +84,38 @@ function prepareSheet(source, picture) {
       return empties.get(i);
     },
   };
+}
+
+/** A sheet with uneven gaps: its tiles are found by js/core/uneven.js. */
+function prepareUneven(source, picture) {
+  const { width, height } = source.grid;
+  const { cols, rows, cells, found, overlaps } = unevenGrid(picture, width, height);
+  const frames = new Map();
+  const empties = new Map();
+  const prepared = {
+    count: cols * rows,
+    cols,
+    rows,
+    size: { width, height },
+    picture,
+    found,
+    overlaps,
+    rect: (i) => (cells[i] ? { x: cells[i].x, y: cells[i].y, w: cells[i].w, h: cells[i].h } : null),
+    frame(i) {
+      if (!frames.has(i)) {
+        const tile = newCanvas(width, height);
+        const c = cells[i];
+        if (c) context(tile).drawImage(picture, c.x, c.y, c.w, c.h, c.dx, c.dy, c.w, c.h);
+        frames.set(i, tile);
+      }
+      return frames.get(i);
+    },
+    isEmpty(i) {
+      if (!empties.has(i)) empties.set(i, !cells[i] || isEmpty(prepared.frame(i)));
+      return empties.get(i);
+    },
+  };
+  return prepared;
 }
 
 function prepareFrames(frames) {

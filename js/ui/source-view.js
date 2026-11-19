@@ -22,7 +22,6 @@ import { state, selectedSource, requestRender } from "../state.js";
 import { $ } from "../util/dom.js";
 import { newCanvas, context, rgbToHex } from "../util/canvas.js";
 import { fitZoom, zoomLabel, stageSize, drawZoomed, clearView, themeColor, artPoint, outline, label } from "../util/view.js";
-import { cellRect } from "../core/grid.js";
 import { prepare } from "../core/prepare.js";
 import { syncControls } from "./controls.js";
 import { newAnimId } from "../core/sources.js";
@@ -84,7 +83,10 @@ export function drawSourceView() {
 /** A sheet is shown as it is, with each grid cell's rectangle. */
 function sheetLayout(source, prepared) {
   const cells = [];
-  for (let i = 0; i < prepared.count; i++) cells.push({ index: i, ...cellRect(source.grid, prepared.cols, i) });
+  for (let i = 0; i < prepared.count; i++) {
+    const rect = prepared.rect(i);
+    if (rect) cells.push({ index: i, ...rect }); // an uneven sheet has empty spaces
+  }
   return {
     picture: source.image,
     original: source.image,
@@ -184,7 +186,7 @@ function onClick(event) {
     // Find where this tile ended up in the new sheet
     const result = state.result;
     if (result) {
-      const index = result.tiles.findIndex((t) => t.sourceId === source.id && t.cell === cell.index);
+      const index = result.tiles.findIndex((t) => t && t.sourceId === source.id && t.cell === cell.index);
       if (index >= 0) state.view.selectedTile = index;
     }
     requestRender({ now: true });

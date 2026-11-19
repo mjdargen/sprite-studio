@@ -16,6 +16,8 @@ import { gridSize, cellRect, leftover, sizeFromCount, guessGrid } from "../js/co
 import { createSource } from "../js/core/sources.js";
 import { prepare, removeBackground } from "../js/core/prepare.js";
 import { applyLayout } from "../js/core/layouts.js";
+import { filterColors } from "../js/core/clean-up.js";
+import { unevenGrid } from "../js/core/uneven.js";
 import { animationNames } from "../js/core/naming.js";
 import { buildSpriteSheet } from "../js/core/sprite-sheet.js";
 import { buildTileSheet } from "../js/core/tile-sheet.js";
@@ -163,6 +165,14 @@ test("guessGrid finds tiles with a gap between them", () => {
 
 /* ---------- Background and layouts ---------- */
 
+test("unevenGrid finds tiles when bigger things have no gaps inside them", () => {
+  // A margin of 1 and gaps of 1, except inside a 16 x 8 block (two tiles with no gap)
+  const rects = [[1, 1, 8, 8, "#f00"], [10, 1, 16, 8, "#0f0"], [27, 1, 8, 8, "#00f"], [1, 10, 8, 8, "#ff0"], [28, 10, 8, 8, "#0ff"]];
+  const found = unevenGrid(picture(37, 19, rects), 8, 8);
+  same([found.cols, found.rows, found.found, found.overlaps], [4, 2, 6, 0]);
+  same(found.cells.map((c) => c && c.x), [1, 10, 18, 27, 1, null, null, 28]);
+});
+
 test("removeBackground makes the chosen color see-through", () => {
   const image = picture(4, 1, [[2, 0, 2, 1, "#00ff00"]], "#ff00ff");
   const cleaned = removeBackground(image, { mode: "auto", color: "#000000", tolerance: 0 }, image);
@@ -241,6 +251,15 @@ test("the code uses the sheet's name and each row", () => {
   ok(code.includes('hero_hero = Sprite("hero", frame_width=16, frame_height=16, row=0, frames=2, fps=8, loop=False)'), code);
 });
 
+test("filterColors inverts, and makes grays, tints and see-through pixels", () => {
+  const frame = picture(2, 1, [[0, 0, 1, 1, "#ff0000"]]); // one red pixel, one empty
+  const pixels = (filters) => Array.from(context(filterColors([frame], { invert: false, gray: false, tint: "#0000ff", tintAmount: 0, opacity: 100, ...filters })[0]).getImageData(0, 0, 2, 1).data);
+  same(pixels({ invert: true }), [0, 255, 255, 255, 0, 0, 0, 0]);
+  same(pixels({ gray: true }), [76, 76, 76, 255, 0, 0, 0, 0]);
+  same(pixels({ tintAmount: 50 }), [128, 0, 128, 255, 0, 0, 0, 0]);
+  same(pixels({ opacity: 0 })[3], 0);
+});
+
 test("a tile sheet removes the gaps and keeps the tiles in order", () => {
   const rects = [[0, 0, 8, 8, "#f00"], [9, 0, 8, 8, "#0f0"], [0, 9, 8, 8, "#00f"]];
   const source = createSource({ kind: "sheet", name: "t", image: picture(17, 17, rects), grid: { width: 8, height: 8, margin: 0, spacing: 1 } }, "tiles");
@@ -250,6 +269,17 @@ test("a tile sheet removes the gaps and keeps the tiles in order", () => {
   same([result.sheet.width, result.sheet.height, result.columns, result.count], [16, 16, 2, 4]);
   const pixel = (x, y) => Array.from(context(result.sheet).getImageData(x, y, 1, 1).data);
   same([pixel(12, 4), pixel(4, 12)], [[0, 255, 0, 255], [0, 0, 255, 255]]);
+});
+
+test("a tile sheet stacks several tile sets, each starting a new row", () => {
+  const grid = () => ({ width: 8, height: 8, margin: 0, spacing: 0 });
+  const ground = createSource({ kind: "sheet", name: "ground", image: picture(24, 16, [[0, 0, 24, 16, "#0f0"]]), grid: grid() }, "tiles");
+  const items = createSource({ kind: "sheet", name: "items", image: picture(16, 8, [[0, 0, 16, 8, "#f00"]]), grid: grid() }, "tiles");
+  const state = testState("tiles", [ground, items]);
+  layOut(state);
+  const result = buildTileSheet(state);
+  same([result.sheet.width, result.sheet.height, result.columns, result.count], [24, 24, 3, 8]);
+  same(result.tiles.map((t) => t && t.sourceId), [ground.id, ground.id, ground.id, ground.id, ground.id, ground.id, items.id, items.id]);
 });
 
 test("a tile sheet can leave out empty tiles", () => {

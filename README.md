@@ -13,7 +13,9 @@ It has two modes:
   plus the `Sprite(...)` code to paste into your game.
 - **Tile sheet**: tiles for a [Tiled](https://www.mapeditor.org) map. Add a
   tile set (with or without gaps between tiles) or a folder of separate
-  tiles; get back a tightly packed PNG and a `.tsx` tileset file.
+  tiles; get back a tightly packed PNG and a `.tsx` tileset file. Add several
+  tile sets cut the same way (ground, buildings, items...) and they're
+  stacked into one sheet, each starting on a new row.
 
 ## What it can read
 
@@ -31,12 +33,17 @@ It has two modes:
 - **Backgrounds**: make a solid background color see-through, either the
   color in the top-left corner or one you click on.
 - **Spacing**: remove gaps around and between frames or tiles, and cut extra
-  pixels off the edges of every frame.
+  pixels off the edges of every frame. For sheets whose gaps aren't the same
+  everywhere (often there's no gap inside a bigger thing made of several
+  tiles), "Gaps aren't even" finds each tile by the see-through space around
+  it instead.
 - **Empty space**: trim see-through space from around a character, keeping
   every animation lined up so the character doesn't jump when it changes
   animation.
 - **Size**: make art 2×, 3× or 4× bigger, or shrink art that was exported
   enlarged, keeping pixel art sharp.
+- **Colors**: invert the whole sheet's colors, turn it black and white, tint
+  it a color, or make it partly see-through.
 - **Order and names**: put the animations in any order, rename them, set each
   one's speed, and mark ones that play once.
 

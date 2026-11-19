@@ -42,6 +42,13 @@ export const DEFAULT_SETTINGS = {
   scale: 1,
   smooth: false,
 
+  // Step 3: change the colors of the whole sheet, after everything else.
+  //   invert: swap every color for its opposite (black <-> white)
+  //   gray: turn every color into a shade of gray (black and white)
+  //   tint, tintAmount: blend every color toward `tint` ("#rrggbb"), 0-100%
+  //   opacity: 0-100%; below 100 makes everything partly see-through
+  filters: { invert: false, gray: false, tint: "#ff0000", tintAmount: 0, opacity: 100 },
+
   // Step 3 (tiles)
   tiles: {
     skipEmpty: false, // leave out tiles with no visible pixels

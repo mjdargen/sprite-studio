@@ -68,6 +68,16 @@ export function defaultLayout(source) {
   return cols === 1 && rows > 1 ? "columns" : "rows";
 }
 
+/**
+ * Tiles mode: give every sheet the same grid, since tile sets that go in one
+ * tile sheet are cut the same way. Changing the grid of one changes them all.
+ */
+export function shareGrid(sources, grid) {
+  for (const source of sources) {
+    if (source.kind === "sheet") source.grid = { ...grid };
+  }
+}
+
 /** A new, unique animation id for an animation the student adds themselves. */
 export function newAnimId(source) {
   return `${source.id}:own:${++lastAnimId}`;

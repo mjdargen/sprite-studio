@@ -30,6 +30,12 @@ import { isAtlas, atlasImageName, framesFromAtlas } from "./atlas.js";
 /** File extensions the browser can open as pictures. */
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "bmp", "avif"];
 
+/**
+ * In tiles mode, same-size images this big or smaller are separate tiles;
+ * bigger ones are tile sets (two 256×256 tile sets are not two tiles).
+ */
+const LARGEST_SINGLE_TILE = 128;
+
 /** The frames per second to use when a file doesn't say. */
 export const DEFAULT_FPS = 8;
 
@@ -161,15 +167,18 @@ export function fpsFromDurations(durations) {
  * number at the end (walk1, walk2...) become the frames of one animation.
  * Other images become sheets, to be cut up in step 2.
  *
- * Tiles mode: if every image is the same size, they're separate tiles and
- * become one "frames" spec (one tile each). Otherwise each is a sheet.
+ * Tiles mode: if every image is the same small size (LARGEST_SINGLE_TILE or
+ * less), they're separate tiles and become one "frames" spec (one tile each).
+ * Otherwise each is a sheet: a tile set to cut up and stack with the others.
  */
 function groupStills(stills, options) {
   if (!stills.length) return [];
 
   if (options.mode === "tiles") {
-    const sameSize = stills.every((s) => s.image.width === stills[0].image.width && s.image.height === stills[0].image.height);
-    if (stills.length > 1 && sameSize) {
+    const { width, height } = stills[0].image;
+    const sameSize = stills.every((s) => s.image.width === width && s.image.height === height);
+    const small = width <= LARGEST_SINGLE_TILE && height <= LARGEST_SINGLE_TILE;
+    if (stills.length > 1 && sameSize && small) {
       const name = commonPrefix(stills.map((s) => cleanName(s.name))) || "tiles";
       return [{ kind: "frames", name, frames: stills.map((s) => s.image), fps: DEFAULT_FPS, tags: null, note: `${stills.length} images, one tile each` }];
     }

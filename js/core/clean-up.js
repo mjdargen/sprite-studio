@@ -1,13 +1,13 @@
 /*
   Step 3's clean-up jobs on lists of frames: cutting off edges, trimming
-  empty space, adding padding and changing the size.
+  empty space, adding padding, changing the size and changing the colors.
 
   Each function takes canvases and returns new ones, and never changes the
   canvases it was given (they're shared with the cache in prepare.js).
   Background removal is in prepare.js, because it's done once per file.
 */
 
-import { copyRegion, newCanvas, context, visibleBox, unionBoxes, resizeCanvas } from "../util/canvas.js";
+import { copyRegion, newCanvas, context, visibleBox, unionBoxes, resizeCanvas, readPixels, canvasFromPixels, hexToRgb } from "../util/canvas.js";
 
 /**
  * Cut `crop.left`, `crop.right`, `crop.top` and `crop.bottom` pixels off the
@@ -60,4 +60,31 @@ export function pad(frames, padding) {
 export function scale(frames, factor, smooth) {
   if (factor === 1) return frames;
   return frames.map((frame) => resizeCanvas(frame, factor, smooth));
+}
+
+/**
+ * Change the colors of every frame (settings.filters): invert them, make them
+ * gray, blend them toward a tint color, and/or make them partly see-through. Pixels that
+ * are already see-through stay that way.
+ */
+export function filterColors(frames, filters) {
+  const { invert, gray, tint, tintAmount, opacity } = filters;
+  if (!invert && !gray && !tintAmount && opacity === 100) return frames;
+  const [tr, tg, tb] = hexToRgb(tint);
+  const mix = tintAmount / 100;
+  const see = opacity / 100;
+  return frames.map((frame) => {
+    const { data } = readPixels(frame);
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] === 0) continue;
+      let r = data[i], g = data[i + 1], b = data[i + 2];
+      if (invert) { r = 255 - r; g = 255 - g; b = 255 - b; }
+      if (gray) r = g = b = 0.299 * r + 0.587 * g + 0.114 * b; // how bright it looks
+      data[i] = r + (tr - r) * mix;
+      data[i + 1] = g + (tg - g) * mix;
+      data[i + 2] = b + (tb - b) * mix;
+      data[i + 3] *= see;
+    }
+    return canvasFromPixels(data, frame.width, frame.height);
+  });
 }
